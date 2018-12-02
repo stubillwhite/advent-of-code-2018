@@ -23,6 +23,3 @@
                    (reduced x)
                    (conj acc x)))
                #{})))
-
-
-
