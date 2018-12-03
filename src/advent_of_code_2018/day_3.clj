@@ -22,12 +22,6 @@
        (string/split-lines)
        (map parse-claim)))
 
-(def test-input
-  (string/join "\n"
-   ["#1 @ 1,3: 4x4"
-    "#2 @ 3,1: 4x4"
-    "#3 @ 5,5: 2x2"]))
-
 (defn- fabric-used [{:keys [x y width height]}]
   (for [x' (range x (+ x width))
         y' (range y (+ y height))] [x' y']))
@@ -37,12 +31,29 @@
           fabric
           (fabric-used claim)))
 
+(defn- process-all-claims [claims]
+  (reduce (fn [acc x] (claim-fabric acc x)) {} claims))
+
 (defn- select-keys-and-values [pred m]
   (into {} (for [[k v] m :when (pred k v)] [k v])))
 
 (defn solution-part-one [input]
   (->> (parse-input input)
-       (reduce (fn [acc x] (claim-fabric acc x)) {})
+       (process-all-claims)
        (select-keys-and-values (fn [k v] (>= v 2)))
        (count)))
 
+;; Part two
+;;
+;; Simplest solution seems to be to just reprocess all claims and select only the one where single cells are selected
+
+(defn- find-non-overlapping-claim [claimed-fabric claims]
+  (when-let [[claim & rest] (seq claims)]
+    (if (every? #(= 1 %) (vals (select-keys claimed-fabric (fabric-used claim))))
+      claim
+      (find-non-overlapping-claim claimed-fabric rest))))
+
+(defn solution-part-two [input]
+  (let [claims         (parse-input input)
+        claimed-fabric (process-all-claims claims)]
+    (:id (find-non-overlapping-claim claimed-fabric claims))))
