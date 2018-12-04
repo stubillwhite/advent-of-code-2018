@@ -1,7 +1,6 @@
 (ns advent-of-code-2018.day-2
   (:require [clojure.java.io :as io]
-            [clojure.string :as string]
-            [clojure.set :as set]))
+            [clojure.string :as string]))
 
 (def problem-input
   (->> (string/trim (slurp (io/resource "day-2-input.txt")))))
