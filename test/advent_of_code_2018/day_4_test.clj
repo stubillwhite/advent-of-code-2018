@@ -26,3 +26,5 @@
 (deftest solution-part-one-given-example-input-then-example-result
   (is (= 240 (solution-part-one example-input))))
 
+(deftest solution-part-two-given-example-input-then-example-result
+  (is (= 4455 (solution-part-two example-input))))

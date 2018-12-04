@@ -1,6 +1,7 @@
 (ns advent-of-code-2018.day-4
   (:require [clojure.java.io :as io]
-            [clojure.string :as string]))
+            [clojure.string :as string]
+            [clojure.set :as set]))
 
 (def problem-input
   (->> (string/trim (slurp (io/resource "day-4-input.txt")))))
@@ -32,17 +33,15 @@
     (= event "wakes up")                     :wakes-up))
 
 (defn- guard-id [event]
-  (->> (re-seq #"Guard #(\d+) begins shift" event)
-       (first)
-       (fnext)
-       (parse-long)))
+  (let [[[_ id]] (re-seq #"Guard #(\d+) begins shift" event)]
+    (parse-long id)))
 
 (defn- add-time-slept [start end data]
   (reduce (fn [acc x] (update acc x (fnil inc 0)))
           data
           (range start end)))
 
-(defn compile-sleep-schedule [records]
+(defn- compile-sleep-schedule [records]
   (:guard-data
    (reduce 
     (fn [{:keys [current-guard sleep-start] :as acc} {:keys [event minute] :as x}]
@@ -56,20 +55,34 @@
      :guard-data    {}}
     records)))
 
-(defn sleepiest-guard-id [schedule]
-  (->> schedule
-       (sort-by (fn [[k v]] (apply + (vals v))))
-       (last)
-       (first)))
+(defn- sleepiest-guard-id [schedule]
+  (let [by-total-sleep (sort-by (fn [[k v]] (apply + (vals v))) schedule)
+        [id total] (last by-total-sleep)]
+    id))
 
 (defn- sleepiest-minute [guard-sleep-schedule]
-  (->> guard-sleep-schedule
-       (sort-by (fn [[k v]] v))
-       (last)
-       (first)))
+  (let [minutes-by-frequency (sort-by (fn [[k v]] v) guard-sleep-schedule)
+        [minute freq] (last minutes-by-frequency)]
+    minute))
 
 (defn solution-part-one [input]
   (let [schedule (compile-sleep-schedule (parse-input input))
         id       (sleepiest-guard-id schedule)
         minute   (sleepiest-minute (get schedule id))]
     (* id minute)))
+
+;; Part two
+
+(defn- key-for-max-val [m]
+  (key (apply max-key val m)))
+
+(defn- sleepiest-by-minute [schedule]
+  (let [by-minute (sort-by (fn [[id mins]] (apply max (vals mins))) schedule)
+        [id mins] (last by-minute)]
+    [id (key-for-max-val mins)]))
+
+(defn solution-part-two [input]
+  (let [schedule    (compile-sleep-schedule (parse-input input))
+        [id minute] (sleepiest-by-minute schedule)]
+    (* id minute)))
+
