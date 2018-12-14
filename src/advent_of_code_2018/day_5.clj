@@ -26,3 +26,16 @@
   (count (react input)))
 
 ;; Part two
+
+(defn- improved-polymers [input]
+  (for [unit (into #{} (seq (string/lower-case input)))]
+    (-> input
+     (string/replace (str unit) "")
+     (string/replace (string/upper-case unit) ""))))
+
+(defn solution-part-two [polymer]
+  (->> (improved-polymers polymer)
+       (map react)
+       (map count)
+       (apply min)))
+
