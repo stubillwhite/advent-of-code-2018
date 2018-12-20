@@ -14,3 +14,6 @@
 
 (deftest solution-part-one-given-example-input-then-example-result
   (is (= 17 (solution-part-one example-input))))
+
+(deftest solution-part-two-given-example-input-then-example-result
+  (is (= 16 (solution-part-two example-input 32))))

@@ -1,13 +1,11 @@
 (ns advent-of-code-2018.day-6
   (:require [clojure.java.io :as io]
-            [clojure.set :as set]
             [clojure.string :as string]))
 
 ;; Data types
 
-(defn- make-cell [closest dist]
-  {:closest closest
-   :dist    dist})
+(defn- make-cell [coords]
+  {:coords coords})
 
 (defn- make-grid [coords]
   {:left        (apply min (map first coords))
@@ -47,39 +45,53 @@
 (defn- manhattan-distance [[x1 y1] [x2 y2]]
   (+ (Math/abs (- x1 x2)) (Math/abs (- y1 y2))))
 
-(defn- min-by-distance [cell-a cell-b]
-  (cond
-    (nil? cell-a)     cell-b
-    (nil? cell-b)     cell-a
-    (< (:dist cell-a) (:dist cell-b)) cell-a
-    (= (:dist cell-a) (:dist cell-b)) (update cell-b :closest (partial set/union (:closest cell-a)))
-    :else             cell-b))
+(defn- distances-from [xy coordinates]
+  (into {} (for [coord coordinates] [coord (manhattan-distance xy coord)])))
 
-(defn- closest-coordinate-to [coordinates xy]
-  (reduce (fn [curr coord] (min-by-distance curr (make-cell #{coord} (manhattan-distance xy coord))))
-          (make-cell #{(first coordinates)} (manhattan-distance xy (first coordinates)))
-          (rest coordinates)))
+(defn- fill-grid-by [f-cell {:keys [cells coordinates] :as grid}]
+  (assoc grid :cells (into {} (for [xy (grid-indices grid)]
+                                [xy (f-cell (distances-from xy coordinates))]))))
 
-(defn- fill-grid [{:keys [cells coordinates] :as grid}]
-  (assoc grid :cells (reduce (fn [acc xy]
-                               (assoc acc xy (min-by-distance (get acc xy) (closest-coordinate-to coordinates xy))))
-                             cells
-                             (grid-indices grid))))
+(defn- sort-by-val [kv]
+  (into (sorted-map-by
+         (fn [k1 k2] (compare [(get kv k1) k1]
+                             [(get kv k2) k2])))
+        kv))
 
-(defn- map-vals [f kv]
-  (into {} (for [[k v] kv] [k (f v)])))
+(defn- closest-unique-coordinate [distances]
+  (let [[[k1 v1] [k2 v2]] (seq (sort-by-val distances))]
+    (when (not= v1 v2)
+      (make-cell #{k1}))))
 
-(defn- coordinate-areas [grid]
+(defn- largest-contiguous-area [grid]
   (->> (vals (:cells grid))
-       (map :closest)
-       (filter (fn [x] (= 1 (count x))))
+       (map :coords)
        (group-by identity)
-       (map-vals count)))
+       (vals)
+       (map count)
+       (apply max)))
 
 (defn solution-part-one [input]
   (->> (parse-input input)
        (make-grid)
-       (fill-grid)
-       (coordinate-areas)
-       (vals)
-       (apply max)))
+       (fill-grid-by closest-unique-coordinate)
+       (largest-contiguous-area)))
+
+;; Part two
+
+(defn- total-distance-less-than [limit distances]
+  (when (< (apply + (vals distances)) limit)
+    (make-cell (keys distances))))
+
+(defn- total-area [grid]
+  (->> (vals (:cells grid))
+       (filter identity)
+       (count)))
+
+(defn solution-part-two [input limit]
+  (->> (parse-input input)
+       (make-grid)
+       (fill-grid-by (partial total-distance-less-than limit))
+       (total-area)))
+
+
